@@ -1,13 +1,5 @@
 package protocol
 
-// from client to server
-
-const (
-	packetTypeInit        packetType = "init"
-	packetTypeVideoPacket packetType = "videoPacket"
-	packetTypeEof         packetType = "eof"
-)
-
 type Preset struct {
 	Width      int `json:"w"`
 	Height     int `json:"h"`
@@ -16,6 +8,14 @@ type Preset struct {
 	LevelIdc   int `json:"levelIdc"`
 	Framerate  int `json:"fps"`
 }
+
+// from client to server
+
+const (
+	packetTypeInit        packetType = "init"
+	packetTypeVideoPacket packetType = "videoPacket"
+	packetTypeEof         packetType = "eof"
+)
 
 type Init struct {
 	Presets                 []Preset `json:"presets"`
@@ -28,7 +28,15 @@ type VideoPacket struct {
 	PacketPts      int64 `json:"pts"`
 	PacketDts      int64 `json:"dts"`
 	PacketDuration int64 `json:"duration"`
-	Keyframe       bool  `json:"keyFrme"`
+	KeyFrame       bool  `json:"keyFrame"`
+}
+
+type ServerVisitor interface {
+	Init(obj Init) error
+	VideoPacket(obj VideoPacket, payload []byte) error
+	Eof() error
+
+	UnknownPacket(packetType string) error
 }
 
 // from server to client
@@ -54,26 +62,20 @@ type ExpiringSoon struct {
 	FinalSegmentIndex int `json:"finalSegmentIndex"`
 }
 
-type packetType string // should not be used externally, ServerVisitor/ClientVisitor should be used for reading packetType, Make*Packet to write packetType
-
-type Packet struct {
-	Type   packetType
-	JSON   interface{}
-	Binary []byte
-}
-
-type ServerVisitor interface {
-	Init(obj Init) error
-	VideoPacket(obj VideoPacket, payload []byte) error
-	Eof() error
-
-	UnknownPacket(packetType string) error
-}
-
 type ClientVisitor interface {
 	VideoHeader(obj VideoHeader, payload []byte) error
 	OutputVideoPacket(obj OutputVideoPacket, payload []byte) error
 	ExpringSoon(obj ExpiringSoon) error
 
 	UnknownPacket(packetType string) error
+}
+
+// sending packet
+
+type packetType string // should not be used externally, ServerVisitor/ClientVisitor should be used for reading packetType, Make* to write packetType
+
+type Packet struct {
+	Type   packetType
+	JSON   interface{}
+	Binary []byte
 }
