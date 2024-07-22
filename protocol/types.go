@@ -1,21 +1,57 @@
 package protocol
 
+// from client to server
+
+const (
+	packetTypeInit        packetType = "init"
+	packetTypeVideoPacket packetType = "videoPacket"
+	packetTypeEof         packetType = "eof"
+)
+
+type Preset struct {
+	Width      int `json:"w"`
+	Height     int `json:"h"`
+	Bitrate    int `json:"bitrate"`
+	ProfileIdc int `json:"profileIdc"`
+	LevelIdc   int `json:"levelIdc"`
+	Framerate  int `json:"fps"`
+}
+
 type Init struct {
-	Presets               []int `json:"presets"`
-	OutputTimestampOffset int64 `json:"output_timestamp_offset"`
+	Presets                 []Preset `json:"presets"`
+	TicksPerSecond          int64    `json:"ticksPerSecond"`
+	NextSegmentIndex        int      `json:"nextSegmentIndex"`
+	TargetSegmentDurationMs int      `json:"targetSegmentDurationMs"`
 }
 
-type ClientVideo struct {
-	PacketPts int64 `json:"packet_pts"`
-	PacketDts int64 `json:"packet_dts"`
+type VideoPacket struct {
+	PacketPts      int64 `json:"pts"`
+	PacketDts      int64 `json:"dts"`
+	PacketDuration int64 `json:"duration"`
+	Keyframe       bool  `json:"keyFrme"`
 }
 
-type ServerVideo struct {
-	PresetIndex  int   `json:"preset_index"`
-	SegmentIndex int64 `json:"segment_index"`
+// from server to client
 
-	PacketPts int64 `json:"packet_pts"`
-	PacketDts int64 `json:"packet_dts"`
+const (
+	packetTypeVideoHeader       packetType = "videoHeader"
+	packetTypeOutputVideoPacket packetType = "outputVideoPacket"
+	packetTypeExpiringSoon      packetType = "expiringSoon"
+)
+
+type VideoHeader struct {
+	PresetIndex int `json:"presetIndex"`
+}
+
+type OutputVideoPacket struct {
+	PresetIndex  int  `json:"presetIndex"`
+	SegmentIndex int  `json:"segmentIndex"`
+	SegmentEnd   bool `json:"segmentEnd"`
+	DurationMs   int  `json:"durationMs"`
+}
+
+type ExpiringSoon struct {
+	FinalSegmentIndex int `json:"finalSegmentIndex"`
 }
 
 type packetType string // should not be used externally, ServerVisitor/ClientVisitor should be used for reading packetType, Make*Packet to write packetType
@@ -28,13 +64,16 @@ type Packet struct {
 
 type ServerVisitor interface {
 	Init(obj Init) error
-	Video(obj ClientVideo, payload []byte) error
+	VideoPacket(obj VideoPacket, payload []byte) error
+	Eof() error
 
-	UnknownPacket(packetType string, packetData map[string]interface{}, payload []byte) error
+	UnknownPacket(packetType string) error
 }
 
 type ClientVisitor interface {
-	Video(obj ServerVideo)
+	VideoHeader(obj VideoHeader, payload []byte) error
+	OutputVideoPacket(obj OutputVideoPacket, payload []byte) error
+	ExpringSoon(obj ExpiringSoon) error
 
-	UnknownPacket(packetType string, packetData map[string]interface{}, payload []byte) error
+	UnknownPacket(packetType string) error
 }

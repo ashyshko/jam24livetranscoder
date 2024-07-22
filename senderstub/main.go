@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"log"
 
 	"jam24livetranscoder/protocol"
@@ -11,7 +10,6 @@ import (
 )
 
 func main() {
-	fmt.Println("Hello, World!")
 	videoFile := flag.String("i", "", "input video file")
 	ffprobeOutput := flag.String("c", "", "ffprobe output with flags: '-select_streams 0 -print_format compact= -show_frames'")
 	transcoderUrl := flag.String("o", "ws://localhost:8898/ws", "websocket url of transcoder")
@@ -33,12 +31,36 @@ func main() {
 		log.Fatalf("websocket dial failed: %s", err)
 	}
 
-	protocol.Send(
+	err = protocol.Send(
 		ws,
-		protocol.MakeInitPacket(protocol.Init{
-			Presets:               []int{540, 360, 240},
-			OutputTimestampOffset: 0,
+		protocol.MakeInit(protocol.Init{
+			Presets: []protocol.Preset{
+				{
+					Width:   640,
+					Height:  360,
+					Bitrate: 1000,
+				},
+				{
+					Width:   426,
+					Height:  240,
+					Bitrate: 500,
+				},
+			},
+			TicksPerSecond:          1000,
+			NextSegmentIndex:        0,
+			TargetSegmentDurationMs: 3000,
 		}),
 	)
+
+	if err != nil {
+		log.Fatalf("send init failed: %s", err)
+	}
+
+	// send frames
+
+	err = protocol.Send(ws, protocol.MakeEof())
+	if err != nil {
+		log.Fatalf("send eof failed: %s", err)
+	}
 
 }

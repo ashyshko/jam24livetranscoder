@@ -1,30 +1,41 @@
 package protocol
 
-const (
-	packetTypeInit        packetType = "init"
-	packetTypeClientVideo packetType = "client_video"
-	packetTypeServerVideo packetType = "server_video"
-)
-
-func MakeInitPacket(init Init) Packet {
+func MakeInit(obj Init) Packet {
 	return Packet{
 		Type: packetTypeInit,
-		JSON: init,
+		JSON: obj,
 	}
 }
-
-func MakeClientVideoPacket(clientVideo ClientVideo, payload []byte) Packet {
+func MakeVideoPacket(obj VideoPacket, payload []byte) Packet {
 	return Packet{
-		Type:   packetTypeClientVideo,
-		JSON:   clientVideo,
+		Type:   packetTypeVideoPacket,
+		JSON:   obj,
 		Binary: payload,
 	}
 }
-
-func MakeServerVideoPacket(serverVideo ServerVideo, payload []byte) Packet {
+func MakeEof() Packet {
 	return Packet{
-		Type:   packetTypeServerVideo,
-		JSON:   serverVideo,
+		Type: packetTypeEof,
+		JSON: map[string]interface{}{},
+	}
+}
+func MakeVideoHeader(obj VideoHeader, payload []byte) Packet {
+	return Packet{
+		Type:   packetTypeVideoHeader,
+		JSON:   obj,
 		Binary: payload,
+	}
+}
+func MakeOutputVideoPacket(obj OutputVideoPacket, payload []byte) Packet {
+	return Packet{
+		Type:   packetTypeOutputVideoPacket,
+		JSON:   obj,
+		Binary: payload,
+	}
+}
+func MakeExpiringSoon(obj ExpiringSoon) Packet {
+	return Packet{
+		Type: packetTypeExpiringSoon,
+		JSON: obj,
 	}
 }

@@ -6,7 +6,7 @@ import (
 )
 
 type recvPacket struct {
-	Type   packetType
+	Type   string
 	JSON   []byte
 	Binary []byte
 }
@@ -24,7 +24,7 @@ func recv(reader io.Reader) (packet recvPacket, err error) {
 		return
 	}
 
-	packet.Type = packetType(packetTypeBuffer)
+	packet.Type = string(packetTypeBuffer)
 
 	_, err = reader.Read(sizeBuffer)
 	if err != nil {

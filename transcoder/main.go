@@ -12,7 +12,7 @@ import (
 )
 
 func Handler(ws *websocket.Conn) {
-	session := session{}
+	session := newSession(ws)
 	for {
 		err := protocol.RecvServer(ws, &session)
 		if err != nil {

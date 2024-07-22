@@ -18,27 +18,37 @@ func newSession(writer io.Writer) session {
 	}
 }
 
-func (this *session) Init(init protocol.Init) error {
+func (this *session) Init(obj protocol.Init) error {
 	if this.init != nil {
 		return fmt.Errorf("init received twice")
 	}
 
-	this.init = &init
-	log.Printf("init %+v", init)
+	this.init = &obj
+	log.Printf("init %+v", obj)
 	return nil
 }
 
-func (this *session) Video(clientVideo protocol.ClientVideo, payload []byte) error {
+func (this *session) VideoPacket(obj protocol.VideoPacket, payload []byte) error {
 	if this.init == nil {
 		return fmt.Errorf("video received before init")
 	}
 
-	log.Printf("video %+v %+v", clientVideo, payload)
+	log.Printf("video %+v %+v", obj, payload)
 
 	return nil
 }
 
-func (this *session) UnknownPacket(packetType string, packetData map[string]interface{}, payload []byte) error {
-	log.Printf("unknown packet %s %+v %+v", packetType, packetData, payload)
+func (this *session) Eof() error {
+	if this.init == nil {
+		return fmt.Errorf("eof received before init")
+	}
+
+	log.Printf("eof")
+
+	return nil
+}
+
+func (this *session) UnknownPacket(packetType string) error {
+	log.Printf("unknown packet %s", packetType)
 	return nil
 }
