@@ -13,7 +13,7 @@ import (
 
 type session struct {
 	ws            *websocket.Conn
-	transcoderObj WdpInstance
+	transcoderObj *WdpInstance
 	init          *protocol.Init
 	closed        *atomic.Bool
 	readCompleted *sync.WaitGroup
@@ -44,9 +44,9 @@ func newSession(ws *websocket.Conn, wdpWrap WdpWrap) session {
 			// log.Printf("recv packet: stream=%d pts=%d dts=%d, size=%d", packet.PresetIndex, packet.Pts, packet.Dts, len(packet.Payload))
 			err = protocol.Send(ws, protocol.MakeOutputVideoPacket(protocol.OutputVideoPacket{
 				PresetIndex:  packet.PresetIndex,
-				SegmentIndex: 0,
-				SegmentEnd:   false,
-				DurationMs:   3000,
+				SegmentIndex: packet.SegmentIndex,
+				SegmentEnd:   packet.SegmentEnd,
+				DurationMs:   packet.DurationMs,
 				PacketPts:    packet.Pts,
 				PacketDts:    packet.Dts,
 				KeyFrame:     packet.Keyframe,
@@ -60,7 +60,7 @@ func newSession(ws *websocket.Conn, wdpWrap WdpWrap) session {
 
 	return session{
 		ws:            ws,
-		transcoderObj: transcoderObj,
+		transcoderObj: &transcoderObj,
 		closed:        closed,
 		readCompleted: readCompletedWg,
 	}

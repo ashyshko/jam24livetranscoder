@@ -41,18 +41,20 @@ func main() {
 	init := protocol.Init{
 		Presets: []protocol.Preset{
 			{
-				Width:   640,
-				Height:  360,
-				Bitrate: 1000,
+				Width:     640,
+				Height:    360,
+				Bitrate:   1000,
+				Framerate: 60,
 			},
 			{
-				Width:   426,
-				Height:  240,
-				Bitrate: 500,
+				Width:     426,
+				Height:    240,
+				Bitrate:   500,
+				Framerate: 60,
 			},
 		},
-		TicksPerSecond:          1000,
-		NextSegmentIndex:        0,
+		TicksPerSecond:          240_000,
+		NextSegmentIndex:        2,
 		TargetSegmentDurationMs: 3000,
 	}
 
@@ -95,8 +97,6 @@ func main() {
 			}
 		}
 	}()
-
-	//
 
 	ffprobeOutputScanner := bufio.NewScanner(ffprobeOutputFile)
 	for ffprobeOutputScanner.Scan() {
@@ -162,9 +162,9 @@ func main() {
 
 		err = protocol.Send(ws, protocol.MakeVideoPacket(
 			protocol.VideoPacket{
-				PacketPts:      int64(ptsTime * 1000.0),
-				PacketDts:      int64(dtsTime * 1000.0),
-				PacketDuration: int64(durationTime * 1000.0),
+				PacketPts:      int64(ptsTime * 240_000.0),
+				PacketDts:      int64(dtsTime * 240_000.0),
+				PacketDuration: int64(durationTime * 240_000.0),
 				KeyFrame:       keyFrame > 0,
 			},
 			buf,

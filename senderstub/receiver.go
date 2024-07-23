@@ -37,7 +37,7 @@ func (this *receiver) OutputVideoHeader(obj protocol.OutputVideoHeader, payload 
 
 func (this *receiver) OutputVideoPacket(obj protocol.OutputVideoPacket, payload []byte) error {
 	if obj.PresetIndex == 0 {
-		log.Printf("pts=%d dts=%d segment=%d segmentEnd=%v", obj.PacketPts, obj.PacketDts, obj.SegmentIndex, obj.SegmentEnd)
+		log.Printf("pts=%d dts=%d segment=%d segmentEnd=%v duration=%v", obj.PacketPts, obj.PacketDts, obj.SegmentIndex, obj.SegmentEnd, obj.DurationMs)
 	}
 
 	err := replaceStartCodes(payload)

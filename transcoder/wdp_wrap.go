@@ -18,6 +18,9 @@ long long (*sym_transcoder_out_pts)( void* ptr );
 long long (*sym_transcoder_out_dts)( void* ptr );
 int (*sym_transcoder_out_keyframe)( void* ptr );
 size_t (*sym_transcoder_out_size)( void* ptr );
+int (*sym_transcoder_out_segment_index)( void* ptr );
+int (*sym_transcoder_out_segment_duration)( void* ptr );
+int (*sym_transcoder_out_last_frame_in_segment)( void* ptr );
 int (*sym_transcoder_take_frame)( void* ptr, void* out_ptr );
 
 
@@ -107,6 +110,27 @@ int init_lib()
 	if(sym_transcoder_out_size == 0)
 	{
 		printf("can't load symbol sym_transcoder_out_size\n");
+		return -1;
+	}
+
+	sym_transcoder_out_segment_index = (int (*)( void* ptr ))dlsym(lib_handle, "transcoder_out_segment_index");
+	if(sym_transcoder_out_segment_index == 0)
+	{
+		printf("can't load symbol transcoder_out_segment_index\n");
+		return -1;
+	}
+
+	sym_transcoder_out_segment_duration = (int (*)( void* ptr ))dlsym(lib_handle, "transcoder_out_segment_duration");
+	if(sym_transcoder_out_segment_duration == 0)
+	{
+		printf("can't load symbol transcoder_out_segment_duration\n");
+		return -1;
+	}
+
+	sym_transcoder_out_last_frame_in_segment = (int (*)( void* ptr ))dlsym(lib_handle, "transcoder_out_last_frame_in_segment");
+	if(sym_transcoder_out_last_frame_in_segment == 0)
+	{
+		printf("can't load symbol transcoder_out_last_frame_in_segment\n");
 		return -1;
 	}
 
@@ -246,6 +270,37 @@ int transcoder_out_size( void* ptr )
 	return sym_transcoder_out_size(ptr);
 }
 
+int transcoder_out_segment_index( void* ptr )
+{
+	if(sym_transcoder_out_segment_index == 0)
+	{
+		return -1;
+	}
+
+	return sym_transcoder_out_segment_index(ptr);
+}
+
+int transcoder_out_segment_duration( void* ptr )
+{
+	if(sym_transcoder_out_segment_duration == 0)
+	{
+		return -1;
+	}
+
+	return sym_transcoder_out_segment_duration(ptr);
+}
+
+int transcoder_out_last_frame_in_segment( void* ptr )
+{
+	if(sym_transcoder_out_last_frame_in_segment == 0)
+	{
+		return -1;
+	}
+
+	return sym_transcoder_out_last_frame_in_segment(ptr);
+}
+
+
 int transcoder_take_frame( void* ptr, void* out_data )
 {
 	if(sym_transcoder_take_frame == 0)
@@ -300,7 +355,8 @@ func (this WdpWrap) Alloc() WdpInstance {
 }
 
 type WdpInstance struct {
-	handle unsafe.Pointer
+	handle         unsafe.Pointer
+	ticksPerSecond int
 }
 
 func (this *WdpInstance) Close() {
@@ -320,6 +376,7 @@ func (this *WdpInstance) Init(ticksPerSecond int, nextSegmentIndex int, targetSe
 	if ret != 0 {
 		return fmt.Errorf("transcoder_init failed: %d", ret)
 	}
+	this.ticksPerSecond = ticksPerSecond
 	return nil
 }
 
@@ -348,12 +405,15 @@ func (this *WdpInstance) OnEof() error {
 }
 
 type WdpPacket struct {
-	PresetIndex int
-	Header      bool
-	Keyframe    bool
-	Pts         int64
-	Dts         int64
-	Payload     []byte
+	PresetIndex  int
+	SegmentIndex int
+	DurationMs   int
+	SegmentEnd   bool
+	Header       bool
+	Keyframe     bool
+	Pts          int64
+	Dts          int64
+	Payload      []byte
 }
 
 func (this *WdpInstance) TakePacket() (*WdpPacket, error) {
@@ -386,6 +446,21 @@ func (this *WdpInstance) TakePacket() (*WdpPacket, error) {
 		return nil, fmt.Errorf("transcoder_out_keyframe failed: %d", keyframe)
 	}
 
+	segmentIndex := C.transcoder_out_segment_index(this.handle)
+	if segmentIndex < 0 {
+		return nil, fmt.Errorf("transcoder_out_segment_index failed: %d", segmentIndex)
+	}
+
+	segmentDuration := C.transcoder_out_segment_duration(this.handle)
+	if segmentDuration < 0 {
+		return nil, fmt.Errorf("transcoder_out_segment_duration failed: %d", segmentDuration)
+	}
+
+	lastFrameInSegment := C.transcoder_out_last_frame_in_segment(this.handle)
+	if lastFrameInSegment < 0 {
+		return nil, fmt.Errorf("transcoder_out_last_frame_in_segment failed: %d", lastFrameInSegment)
+	}
+
 	size := C.transcoder_out_size(this.handle)
 	if size < 0 {
 		return nil, fmt.Errorf("transcoder_out_size failed: %d", size)
@@ -402,12 +477,15 @@ func (this *WdpInstance) TakePacket() (*WdpPacket, error) {
 	payload = C.GoBytes(payloadC, size)
 
 	return &WdpPacket{
-		PresetIndex: int(preset),
-		Header:      false,
-		Pts:         int64(pts),
-		Dts:         int64(dts),
-		Keyframe:    keyframe > 0,
-		Payload:     payload,
+		PresetIndex:  int(preset),
+		SegmentIndex: int(segmentIndex),
+		DurationMs:   int(segmentDuration) * 1000 / this.ticksPerSecond,
+		SegmentEnd:   lastFrameInSegment > 0,
+		Header:       false,
+		Pts:          int64(pts),
+		Dts:          int64(dts),
+		Keyframe:     keyframe > 0,
+		Payload:      payload,
 	}, nil
 
 }
