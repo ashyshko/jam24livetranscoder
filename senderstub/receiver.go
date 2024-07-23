@@ -31,14 +31,14 @@ func newReceiver(savePath string, presets []protocol.Preset) receiver {
 }
 
 func (this *receiver) OutputVideoHeader(obj protocol.OutputVideoHeader, payload []byte) error {
-	log.Printf("VideoHeader %v", obj)
+	log.Printf("VideoHeader %v: size %d", obj, len(payload))
 	return nil
 }
 
 func (this *receiver) OutputVideoPacket(obj protocol.OutputVideoPacket, payload []byte) error {
-	if obj.PresetIndex == 0 {
-		log.Printf("pts=%d dts=%d segment=%d segmentEnd=%v duration=%v", obj.PacketPts, obj.PacketDts, obj.SegmentIndex, obj.SegmentEnd, obj.DurationMs)
-	}
+	//if obj.PresetIndex == 0 {
+	//	log.Printf("pts=%d dts=%d segment=%d segmentEnd=%v duration=%v", obj.PacketPts, obj.PacketDts, obj.SegmentIndex, obj.SegmentEnd, obj.DurationMs)
+	//}
 
 	err := replaceStartCodes(payload)
 	if err != nil {

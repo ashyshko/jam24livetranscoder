@@ -42,15 +42,21 @@ func newSession(ws *websocket.Conn, wdpWrap WdpWrap) session {
 			}
 
 			// log.Printf("recv packet: stream=%d pts=%d dts=%d, size=%d", packet.PresetIndex, packet.Pts, packet.Dts, len(packet.Payload))
-			err = protocol.Send(ws, protocol.MakeOutputVideoPacket(protocol.OutputVideoPacket{
-				PresetIndex:  packet.PresetIndex,
-				SegmentIndex: packet.SegmentIndex,
-				SegmentEnd:   packet.SegmentEnd,
-				DurationMs:   packet.DurationMs,
-				PacketPts:    packet.Pts,
-				PacketDts:    packet.Dts,
-				KeyFrame:     packet.Keyframe,
-			}, packet.Payload))
+			if !packet.Header {
+				err = protocol.Send(ws, protocol.MakeOutputVideoPacket(protocol.OutputVideoPacket{
+					PresetIndex:  packet.PresetIndex,
+					SegmentIndex: packet.SegmentIndex,
+					SegmentEnd:   packet.SegmentEnd,
+					DurationMs:   packet.DurationMs,
+					PacketPts:    packet.Pts,
+					PacketDts:    packet.Dts,
+					KeyFrame:     packet.Keyframe,
+				}, packet.Payload))
+			} else {
+				err = protocol.Send(ws, protocol.MakeOutputVideoHeader(protocol.OutputVideoHeader{
+					PresetIndex: packet.PresetIndex,
+				}, packet.Payload))
+			}
 			if err != nil {
 				log.Printf("protocol.Send failed: %s", err)
 				break

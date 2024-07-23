@@ -13,6 +13,7 @@ int (*sym_transcoder_on_video)( void* ptr, long long pts, long long dts, bool ke
 int (*sym_transcoder_on_eof)( void* ptr );
 
 int (*sym_transcoder_out_queue_size)( void* ptr );
+int (*sym_transcoder_out_header)( void* ptr );
 int (*sym_transcoder_out_preset)( void* ptr );
 long long (*sym_transcoder_out_pts)( void* ptr );
 long long (*sym_transcoder_out_dts)( void* ptr );
@@ -82,6 +83,13 @@ int init_lib()
 	if(sym_transcoder_out_preset == 0)
 	{
 		printf("can't load symbol sym_transcoder_out_preset\n");
+		return -1;
+	}
+
+	sym_transcoder_out_header = (int (*)( void* ptr ))dlsym(lib_handle, "transcoder_out_header");
+	if(sym_transcoder_out_header == 0)
+	{
+		printf("can't load symbol sym_transcoder_out_header\n");
 		return -1;
 	}
 
@@ -229,6 +237,17 @@ int transcoder_out_preset( void* ptr )
 
 	return sym_transcoder_out_preset(ptr);
 }
+
+int transcoder_out_header( void* ptr )
+{
+	if(sym_transcoder_out_header == 0)
+	{
+		return -1;
+	}
+
+	return sym_transcoder_out_header(ptr);
+}
+
 
 int transcoder_out_pts( void* ptr )
 {
@@ -431,6 +450,11 @@ func (this *WdpInstance) TakePacket() (*WdpPacket, error) {
 		return nil, fmt.Errorf("transcoder_out_preset failed: %d", preset)
 	}
 
+	header := C.transcoder_out_header(this.handle)
+	if header < 0 {
+		return nil, fmt.Errorf("transcoder_out_header failed: %d", header)
+	}
+
 	pts := C.transcoder_out_pts(this.handle)
 	if pts < 0 {
 		return nil, fmt.Errorf("transcoder_out_pts failed: %d", pts)
@@ -481,7 +505,7 @@ func (this *WdpInstance) TakePacket() (*WdpPacket, error) {
 		SegmentIndex: int(segmentIndex),
 		DurationMs:   int(segmentDuration) * 1000 / this.ticksPerSecond,
 		SegmentEnd:   lastFrameInSegment > 0,
-		Header:       false,
+		Header:       header > 0,
 		Pts:          int64(pts),
 		Dts:          int64(dts),
 		Keyframe:     keyframe > 0,
