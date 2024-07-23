@@ -7,6 +7,14 @@ func MakeInit(obj Init) Packet {
 	}
 }
 
+func MakeVideoHeader(payload []byte) Packet {
+	return Packet{
+		Type:   packetTypeOutputVideoHeader,
+		JSON:   map[string]interface{}{},
+		Binary: payload,
+	}
+}
+
 func MakeVideoPacket(obj VideoPacket, payload []byte) Packet {
 	return Packet{
 		Type:   packetTypeVideoPacket,
@@ -22,7 +30,7 @@ func MakeEof() Packet {
 	}
 }
 
-func MakeVideoHeader(obj OutputVideoHeader, payload []byte) Packet {
+func MakeOutputVideoHeader(obj OutputVideoHeader, payload []byte) Packet {
 	return Packet{
 		Type:   packetTypeOutputVideoHeader,
 		JSON:   obj,

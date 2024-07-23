@@ -31,6 +31,22 @@ func (this *session) Init(obj protocol.Init) error {
 
 func (this *session) VideoHeader(payload []byte) error {
 	log.Printf("video header %d", len(payload))
+
+	for presetIndex := range this.init.Presets {
+		err := protocol.Send(
+			this.ws,
+			protocol.MakeOutputVideoHeader(
+				protocol.OutputVideoHeader{
+					PresetIndex: presetIndex,
+				},
+				payload),
+		)
+
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
