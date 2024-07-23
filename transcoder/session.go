@@ -39,6 +39,10 @@ func (this *session) VideoPacket(obj protocol.VideoPacket, payload []byte) error
 		return fmt.Errorf("video received before init")
 	}
 
+	segmentIndex := int(float64(obj.PacketPts) / (float64(this.init.TicksPerSecond) * 3))
+	nextSegmentIndex := int((float64(obj.PacketPts) + 0.034*float64(this.init.TicksPerSecond)) / (float64(this.init.TicksPerSecond) * 3))
+	segmentEnd := nextSegmentIndex > segmentIndex
+
 	log.Printf("video %+v %+v", obj, len(payload))
 
 	for presetIndex := range this.init.Presets {
@@ -47,8 +51,11 @@ func (this *session) VideoPacket(obj protocol.VideoPacket, payload []byte) error
 			protocol.MakeOutputVideoPacket(
 				protocol.OutputVideoPacket{
 					PresetIndex:  presetIndex,
-					SegmentIndex: 0,
-					SegmentEnd:   false,
+					SegmentIndex: segmentIndex,
+					SegmentEnd:   segmentEnd,
+					DurationMs:   3000,
+					PacketPts:    obj.PacketPts,
+					PacketDts:    obj.PacketDts,
 				},
 				payload),
 		)

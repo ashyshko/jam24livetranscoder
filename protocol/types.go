@@ -58,6 +58,9 @@ type OutputVideoPacket struct {
 	SegmentIndex int  `json:"segmentIndex"`
 	SegmentEnd   bool `json:"segmentEnd"`
 	DurationMs   int  `json:"durationMs"`
+
+	PacketPts int64 `json:"pts"`
+	PacketDts int64 `json:"dts"`
 }
 
 type ExpiringSoon struct {
