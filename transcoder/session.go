@@ -2,19 +2,20 @@ package main
 
 import (
 	"fmt"
-	"io"
 	"jam24livetranscoder/protocol"
 	"log"
+
+	"golang.org/x/net/websocket"
 )
 
 type session struct {
-	writer io.Writer
-	init   *protocol.Init
+	ws   *websocket.Conn
+	init *protocol.Init
 }
 
-func newSession(writer io.Writer) session {
+func newSession(ws *websocket.Conn) session {
 	return session{
-		writer: writer,
+		ws: ws,
 	}
 }
 
@@ -33,7 +34,24 @@ func (this *session) VideoPacket(obj protocol.VideoPacket, payload []byte) error
 		return fmt.Errorf("video received before init")
 	}
 
-	log.Printf("video %+v %+v", obj, payload)
+	log.Printf("video %+v %+v", obj, len(payload))
+
+	for presetIndex := range this.init.Presets {
+		err := protocol.Send(
+			this.ws,
+			protocol.MakeOutputVideoPacket(
+				protocol.OutputVideoPacket{
+					PresetIndex:  presetIndex,
+					SegmentIndex: 0,
+					SegmentEnd:   false,
+				},
+				payload),
+		)
+
+		if err != nil {
+			return err
+		}
+	}
 
 	return nil
 }
@@ -44,6 +62,8 @@ func (this *session) Eof() error {
 	}
 
 	log.Printf("eof")
+
+	this.ws.Close()
 
 	return nil
 }

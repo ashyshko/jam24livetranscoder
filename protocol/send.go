@@ -4,10 +4,11 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
-	"io"
+
+	"golang.org/x/net/websocket"
 )
 
-func Send(writer io.Writer, packet Packet) error {
+func Send(ws *websocket.Conn, packet Packet) error {
 	commandPayload, err := json.Marshal(packet.JSON)
 	if err != nil {
 		return fmt.Errorf("Can't marshal command: %s", err)
@@ -25,6 +26,6 @@ func Send(writer io.Writer, packet Packet) error {
 		output = append(output, packet.Binary...)
 	}
 
-	_, err = writer.Write(output)
+	err = websocket.Message.Send(ws, output)
 	return err
 }

@@ -1,8 +1,12 @@
 package protocol
 
 import (
+	"bytes"
 	"encoding/binary"
-	"io"
+	"encoding/json"
+	"fmt"
+
+	"golang.org/x/net/websocket"
 )
 
 type recvPacket struct {
@@ -11,7 +15,15 @@ type recvPacket struct {
 	Binary []byte
 }
 
-func recv(reader io.Reader) (packet recvPacket, err error) {
+func recv(ws *websocket.Conn) (packet recvPacket, err error) {
+	var data []byte
+	err = websocket.Message.Receive(ws, &data)
+	if err != nil {
+		return
+	}
+
+	reader := bytes.NewReader(data)
+
 	sizeBuffer := make([]byte, 4)
 	_, err = reader.Read(sizeBuffer)
 	if err != nil {
@@ -52,5 +64,46 @@ func recv(reader io.Reader) (packet recvPacket, err error) {
 		}
 	}
 
+	if reader.Len() != 0 {
+		err = fmt.Errorf("left unread data bytes %d", reader.Len())
+		return
+	}
+
 	return
+}
+
+type visitorBase interface {
+	UnknownPacket(packetType string) error
+}
+
+type recvHandler[Visitor visitorBase] struct {
+	packetType packetType
+	action     func(packet recvPacket, visitor Visitor) error
+}
+
+func createRecvHandler[K any, Visitor visitorBase](packetType packetType, handlerFn func(visitor Visitor, obj K, payload []byte) error) recvHandler[Visitor] {
+	return recvHandler[Visitor]{
+		packetType: packetType,
+		action: func(packet recvPacket, visitor Visitor) error {
+			var obj K
+			err := json.Unmarshal(packet.JSON, &obj)
+			if err != nil {
+				return fmt.Errorf("%s unmarshal failed: %s", string(packetType), err)
+			}
+
+			return handlerFn(visitor, obj, packet.Binary)
+		},
+	}
+}
+
+func handle[Visitor visitorBase](packet recvPacket, visitor Visitor, handlers []recvHandler[Visitor]) error {
+	for _, handler := range handlers {
+		if packet.Type != string(handler.packetType) {
+			continue
+		}
+
+		return handler.action(packet, visitor)
+	}
+
+	return visitor.UnknownPacket(packet.Type)
 }
