@@ -30,7 +30,7 @@ func newReceiver(savePath string, presets []protocol.Preset) receiver {
 	}
 }
 
-func (this *receiver) VideoHeader(obj protocol.VideoHeader, payload []byte) error {
+func (this *receiver) OutputVideoHeader(obj protocol.OutputVideoHeader, payload []byte) error {
 	log.Printf("VideoHeader %v", obj)
 	return nil
 }

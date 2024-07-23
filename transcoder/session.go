@@ -29,6 +29,11 @@ func (this *session) Init(obj protocol.Init) error {
 	return nil
 }
 
+func (this *session) VideoHeader(payload []byte) error {
+	log.Printf("video header %d", len(payload))
+	return nil
+}
+
 func (this *session) VideoPacket(obj protocol.VideoPacket, payload []byte) error {
 	if this.init == nil {
 		return fmt.Errorf("video received before init")

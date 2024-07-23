@@ -22,9 +22,9 @@ func MakeEof() Packet {
 	}
 }
 
-func MakeVideoHeader(obj VideoHeader, payload []byte) Packet {
+func MakeVideoHeader(obj OutputVideoHeader, payload []byte) Packet {
 	return Packet{
-		Type:   packetTypeVideoHeader,
+		Type:   packetTypeOutputVideoHeader,
 		JSON:   obj,
 		Binary: payload,
 	}

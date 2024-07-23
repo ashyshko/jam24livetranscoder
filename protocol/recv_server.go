@@ -8,6 +8,9 @@ var serverHandlers = []recvHandler[ServerVisitor]{
 	createRecvHandler(packetTypeInit, func(visitor ServerVisitor, obj Init, _payload []byte) error {
 		return visitor.Init(obj)
 	}),
+	createRecvHandler(packetTypeVideoHeader, func(visitor ServerVisitor, _obj interface{}, payload []byte) error {
+		return visitor.VideoHeader(payload)
+	}),
 	createRecvHandler(packetTypeVideoPacket, func(visitor ServerVisitor, obj VideoPacket, payload []byte) error {
 		return visitor.VideoPacket(obj, payload)
 	}),

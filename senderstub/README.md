@@ -1,7 +1,7 @@
 # Generate ffprobe output
 
 ```
-ffmpeg -i ~/Movies/bbb-540p30.mp4 -an -t 0:00:30 -c:v libx264 -x264-params repeat-headers=1 ~/Downloads/test-video.mp4
+ffmpeg -i ~/Movies/bbb-540p30.mp4 -an -t 0:00:30 -c:v libx264 -bf 0 -x264-params repeat-headers=1 ~/Downloads/test-video.mp4
 
 ffprobe -select_streams 0 -print_format compact= -show_frames ~/Downloads/test-video.mp4 >bbb-540p30-new.txt
 

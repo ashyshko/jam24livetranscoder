@@ -13,6 +13,7 @@ type Preset struct {
 
 const (
 	packetTypeInit        packetType = "init"
+	packetTypeVideoHeader packetType = "videoHeader"
 	packetTypeVideoPacket packetType = "videoPacket"
 	packetTypeEof         packetType = "eof"
 )
@@ -33,6 +34,7 @@ type VideoPacket struct {
 
 type ServerVisitor interface {
 	Init(obj Init) error
+	VideoHeader(payload []byte) error
 	VideoPacket(obj VideoPacket, payload []byte) error
 	Eof() error
 
@@ -42,12 +44,12 @@ type ServerVisitor interface {
 // from server to client
 
 const (
-	packetTypeVideoHeader       packetType = "videoHeader"
+	packetTypeOutputVideoHeader packetType = "outputVideoHeader"
 	packetTypeOutputVideoPacket packetType = "outputVideoPacket"
 	packetTypeExpiringSoon      packetType = "expiringSoon"
 )
 
-type VideoHeader struct {
+type OutputVideoHeader struct {
 	PresetIndex int `json:"presetIndex"`
 }
 
@@ -63,7 +65,7 @@ type ExpiringSoon struct {
 }
 
 type ClientVisitor interface {
-	VideoHeader(obj VideoHeader, payload []byte) error
+	OutputVideoHeader(obj OutputVideoHeader, payload []byte) error
 	OutputVideoPacket(obj OutputVideoPacket, payload []byte) error
 	ExpringSoon(obj ExpiringSoon) error
 
