@@ -4,3 +4,6 @@ senderstub/bbb-540p30-new.txt
 senderstub/output_*.h264
 senderstub/senderstub
 transcoder/transcoder
+transcoder/libwdp_transcoder_lite.dylib
+wdp_transcoder_lite
+.vscode

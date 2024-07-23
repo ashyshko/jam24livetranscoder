@@ -11,8 +11,12 @@ import (
 	"golang.org/x/net/websocket"
 )
 
+var wdpWrap WdpWrap
+
 func Handler(ws *websocket.Conn) {
-	session := newSession(ws)
+	session := newSession(ws, wdpWrap)
+	defer session.Close()
+
 	for {
 		err := protocol.RecvServer(ws, &session)
 		if err != nil {
@@ -25,6 +29,8 @@ func Handler(ws *websocket.Conn) {
 func main() {
 	wsPort := flag.Int("p", 8898, "TCP port for WS listen")
 	flag.Parse()
+
+	wdpWrap = newWdpWrap()
 
 	http.Handle("/ws", websocket.Handler(Handler))
 	path := fmt.Sprintf(":%d", *wsPort)

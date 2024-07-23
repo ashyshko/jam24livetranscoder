@@ -61,6 +61,7 @@ type OutputVideoPacket struct {
 
 	PacketPts int64 `json:"pts"`
 	PacketDts int64 `json:"dts"`
+	KeyFrame  bool  `json:"keyFrame"`
 }
 
 type ExpiringSoon struct {
