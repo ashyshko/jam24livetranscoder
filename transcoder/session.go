@@ -118,12 +118,7 @@ func (this *session) VideoPacket(obj protocol.VideoPacket, payload []byte) error
 		return fmt.Errorf("video received before init")
 	}
 
-	keyFrame := int8(0)
-	if obj.KeyFrame {
-		keyFrame = 1
-	}
-
-	err := this.transcoderObj.OnVideo(obj.PacketPts, obj.PacketDts, keyFrame, payload)
+	err := this.transcoderObj.OnVideo(obj.PacketPts, obj.PacketDts, obj.KeyFrame, payload)
 	if err != nil {
 		return fmt.Errorf("onVideo failed: %s", err)
 	}

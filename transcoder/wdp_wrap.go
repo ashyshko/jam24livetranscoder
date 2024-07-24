@@ -9,7 +9,7 @@ void* (*sym_transcoder_alloc)();
 int (*sym_transcoder_add_preset)( void* ptr, int width, int height, int bitrate, int fps );
 int (*sym_transcoder_init)( void* ptr, int ticks_per_second, int next_segment_index, int target_segment_duration_ms );
 int (*sym_transcoder_on_header)( void* ptr, const void* data, size_t data_size );
-int (*sym_transcoder_on_video)( void* ptr, long long pts, long long dts, bool keyframe, const void* data, size_t data_size );
+int (*sym_transcoder_on_video)( void* ptr, long long pts, long long dts, int keyframe, const void* data, size_t data_size );
 int (*sym_transcoder_on_eof)( void* ptr );
 
 int (*sym_transcoder_out_queue_size)( void* ptr );
@@ -28,96 +28,104 @@ int (*sym_transcoder_take_frame)( void* ptr, void* out_ptr );
 void (*sym_transcoder_free)( void* ptr );
 
 
-int init_lib()
+int init_lib(int is_darwin)
 {
-	lib_handle = dlopen("./libwdp_transcoder_lite.dylib", RTLD_NOW);
+	const char* libname = is_darwin > 0 ? "./libwdp_transcoder_lite.dylib" : "./libwdp_transcoder_lite.so";
+	lib_handle = dlopen(libname, RTLD_NOW);
 	if(lib_handle == 0)
 	{
+		printf("can't load library %s: %s\n", libname, dlerror());
 		return -1;
 	}
 
 	sym_transcoder_alloc = (void* (*)())dlsym(lib_handle, "transcoder_alloc");
 	if(sym_transcoder_alloc == 0)
 	{
+		printf("can't load symbol transcoder_alloc\n");
 		return -1;
 	}
 
 	sym_transcoder_add_preset = (int (*)( void* ptr, int width, int height, int bitrate, int fps ))dlsym(lib_handle, "transcoder_add_preset");
 	if(sym_transcoder_add_preset == 0)
 	{
+		printf("can't load symbol transcoder_add_preset\n");
 		return -1;
 	}
 
 	sym_transcoder_init = (int (*)( void* ptr, int ticks_per_second, int next_segment_index, int target_segment_duration_ms ))dlsym(lib_handle, "transcoder_init");
 	if(sym_transcoder_init == 0)
 	{
+		printf("can't load symbol transcoder_init\n");
 		return -1;
 	}
 
 	sym_transcoder_on_header = (int (*)( void* ptr, const void* data, size_t data_size ))dlsym(lib_handle, "transcoder_on_header");
 	if(sym_transcoder_on_header == 0)
 	{
+		printf("can't load symbol transcoder_on_header\n");
 		return -1;
 	}
 
-	sym_transcoder_on_video = (int (*)( void* ptr, long long pts, long long dts, bool keyframe, const void* data, size_t data_size ))dlsym(lib_handle, "transcoder_on_video");
+	sym_transcoder_on_video = (int (*)( void* ptr, long long pts, long long dts, int keyframe, const void* data, size_t data_size ))dlsym(lib_handle, "transcoder_on_video");
 	if(sym_transcoder_on_video == 0)
 	{
+		printf("can't load symbol transcoder_on_video\n");
 		return -1;
 	}
 
 	sym_transcoder_on_eof = (int (*)( void* ptr ))dlsym(lib_handle, "transcoder_on_eof");
 	if(sym_transcoder_on_eof == 0)
 	{
+		printf("can't load symbol transcoder_on_eof\n");
 		return -1;
 	}
 
 	sym_transcoder_out_queue_size = (int (*)( void* ptr ))dlsym(lib_handle, "transcoder_out_queue_size");
 	if(sym_transcoder_out_queue_size == 0)
 	{
-		printf("can't load symbol sym_transcoder_out_queue_size\n");
+		printf("can't load symbol transcoder_out_queue_size\n");
 		return -1;
 	}
 
 	sym_transcoder_out_preset = (int (*)( void* ptr ))dlsym(lib_handle, "transcoder_out_preset");
 	if(sym_transcoder_out_preset == 0)
 	{
-		printf("can't load symbol sym_transcoder_out_preset\n");
+		printf("can't load symbol transcoder_out_preset\n");
 		return -1;
 	}
 
 	sym_transcoder_out_header = (int (*)( void* ptr ))dlsym(lib_handle, "transcoder_out_header");
 	if(sym_transcoder_out_header == 0)
 	{
-		printf("can't load symbol sym_transcoder_out_header\n");
+		printf("can't load symbol transcoder_out_header\n");
 		return -1;
 	}
 
 	sym_transcoder_out_pts = (long long (*)( void* ptr ))dlsym(lib_handle, "transcoder_out_pts");
 	if(sym_transcoder_out_pts == 0)
 	{
-		printf("can't load symbol sym_transcoder_out_pts\n");
+		printf("can't load symbol transcoder_out_pts\n");
 		return -1;
 	}
 
 	sym_transcoder_out_dts = (long long (*)( void* ptr ))dlsym(lib_handle, "transcoder_out_dts");
 	if(sym_transcoder_out_dts == 0)
 	{
-		printf("can't load symbol sym_transcoder_out_dts\n");
+		printf("can't load symbol transcoder_out_dts\n");
 		return -1;
 	}
 
 	sym_transcoder_out_keyframe = (int (*)( void* ptr ))dlsym(lib_handle, "transcoder_out_keyframe");
 	if(sym_transcoder_out_keyframe == 0)
 	{
-		printf("can't load symbol sym_transcoder_out_keyframe\n");
+		printf("can't load symbol transcoder_out_keyframe\n");
 		return -1;
 	}
 
 	sym_transcoder_out_size = (size_t (*)( void* ptr ))dlsym(lib_handle, "transcoder_out_size");
 	if(sym_transcoder_out_size == 0)
 	{
-		printf("can't load symbol sym_transcoder_out_size\n");
+		printf("can't load symbol transcoder_out_size\n");
 		return -1;
 	}
 
@@ -145,13 +153,14 @@ int init_lib()
 	sym_transcoder_take_frame = (int (*)( void* ptr, void* out_ptr ))dlsym(lib_handle, "transcoder_take_frame");
 	if(sym_transcoder_take_frame == 0)
 	{
-		printf("can't load symbol sym_transcoder_take_frame\n");
+		printf("can't load symbol transcoder_take_frame\n");
 		return -1;
 	}
 
 	sym_transcoder_free = (void (*)( void* ptr ))dlsym(lib_handle, "transcoder_free");
 	if(sym_transcoder_free == 0)
 	{
+		printf("can't load symbol transcoder_free\n");
 		return -1;
 	}
 
@@ -349,6 +358,7 @@ import "C"
 import (
 	"fmt"
 	"log"
+	"runtime"
 	"unsafe"
 )
 
@@ -356,7 +366,11 @@ type WdpWrap struct {
 }
 
 func newWdpWrap() WdpWrap {
-	if C.init_lib() != 0 {
+	isDarwin := 0
+	if runtime.GOOS == "darwin" {
+		isDarwin = 1
+	}
+	if C.init_lib(C.int(isDarwin)) != 0 {
 		log.Fatalf("init_lib failed")
 	}
 
@@ -407,8 +421,12 @@ func (this *WdpInstance) OnHeader(data []byte) error {
 	return nil
 }
 
-func (this *WdpInstance) OnVideo(pts int64, dts int64, keyframe int8, data []byte) error {
-	ret := C.transcoder_on_video(this.handle, C.longlong(pts), C.longlong(dts), C.int(keyframe), C.CBytes(data), C.size_t(len(data)))
+func (this *WdpInstance) OnVideo(pts int64, dts int64, keyframe bool, data []byte) error {
+	keyframeInt := 0
+	if keyframe {
+		keyframeInt = 1
+	}
+	ret := C.transcoder_on_video(this.handle, C.longlong(pts), C.longlong(dts), C.int(keyframeInt), C.CBytes(data), C.size_t(len(data)))
 	if ret != 0 {
 		return fmt.Errorf("transcoder_on_video failed: %d", ret)
 	}
