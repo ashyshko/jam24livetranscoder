@@ -33,6 +33,17 @@ func main() {
 	wdpWrap = newWdpWrap()
 
 	http.Handle("/ws", websocket.Handler(Handler))
+
+	http.HandleFunc("/ping", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(200)
+		fmt.Fprintf(w, "ready")
+	})
+
+	http.HandleFunc("/preStop", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(500)
+		fmt.Fprintf(w, "not implemented...")
+	})
+
 	path := fmt.Sprintf(":%d", *wsPort)
 	log.Printf("Listening on path %s...", path)
 	err := http.ListenAndServe(path, nil)
